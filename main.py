@@ -1,3 +1,13 @@
+from game.build_game import Level
+from game.solver import Solver
+
+level = Level("levels/level1.txt")
+solver = Solver(level)
+
+solution = solver.solve()
+print("💡 Solution trouvée :", solution)
+
+
 """
 Initialize matrix with dimensions [rows][columns]
 For each cell in matrix:
