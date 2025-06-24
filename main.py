@@ -7,12 +7,13 @@ For each cell in matrix:
     If cell contains a box, set value to 2
     If cell contains the player, set value to 3
 """
-
+from display.display_game import DisplayGame
 import numpy as np
+
 def initialize_matrix(rows, columns, obstacles, targets, boxes, player_position):
-    #On crée une matrice de zéros
+
     matrix = np.zeros((rows, columns), dtype=int)
-    #On remplace chaque matrice par les valeurs connues
+
     for (r,c) in obstacles:
         matrix[r][c] = -1
     for (r,c) in targets :
@@ -23,7 +24,6 @@ def initialize_matrix(rows, columns, obstacles, targets, boxes, player_position)
 
     return matrix
 
-#Exemple matrix
 
 rows = 5
 columns = 5
@@ -34,6 +34,9 @@ player_position = (3, 1)
 
 game_matrix = initialize_matrix(rows, columns, obstacles, targets, boxes, player_position)
 print(game_matrix)
+
+game = DisplayGame(game_matrix)
+game.run()
 
 """
 Function movePlayer(direction):
