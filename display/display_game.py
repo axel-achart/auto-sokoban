@@ -1,3 +1,4 @@
+from math import e
 import pygame
 from config import *
 
@@ -41,6 +42,20 @@ class DisplayGame:
         while running:
             self.screen.fill((255, 255, 255)) 
             self.draw_grid()
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_ESCAPE:
+                        running = False
+                    elif event.key == pygame.K_UP:
+                        
+                    elif event.key == pygame.K_DOWN:
+                        
+                    elif event.key == pygame.K_LEFT:
+                        
+                    elif event.key == pygame.K_RIGHT:
+                        
             pygame.display.flip()
             clock.tick(60)
 
