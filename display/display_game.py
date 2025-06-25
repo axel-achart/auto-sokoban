@@ -38,7 +38,7 @@ class DisplayGame:
     def draw_grid(self):
         for y, row in enumerate(self.matrix):
             for x, cell in enumerate(row):
-                color = COLORS.get(cell, (200, 200, 200))  # gris par défaut
+                color = COLORS.get(cell, (200, 200, 255))  # gris par défaut
                 pygame.draw.rect(
                     self.screen,
                     color,
