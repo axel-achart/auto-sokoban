@@ -35,6 +35,15 @@ class DisplayGame:
         self.screen = pygame.display.set_mode((self.width, self.height))
         pygame.display.set_caption("Sokoban Game")
 
+    def draw_button(self, surface, rect, text, base_color, hover_color):
+        self.mouse_pos = pygame.mouse.get_pos()
+        self.is_hovered = rect.collidepoint(self.mouse_pos)
+        self.color = hover_color if self.is_hovered else base_color
+        pygame.draw.rect(surface, self.color, rect)
+        self.text_rect = self.text_surf.get_rect(center=rect.center)
+        self.surface.blit(self.text_surf, self.text_rect)
+        return self.is_hovered
+
     def draw_grid(self):
         for y, row in enumerate(self.matrix):
             for x, cell in enumerate(row):
@@ -56,9 +65,27 @@ class DisplayGame:
         running = True
         clock = pygame.time.Clock()
 
+        font = pygame.font.SysFont(None, 30)
+        buttons = {
+            "reset": pygame.Rect(10, 10, 100, 40),
+            "cancel": pygame.Rect(120, 10, 100, 40),
+            "level1": pygame.Rect(230, 10, 80, 40),
+            "level2": pygame.Rect(320, 10, 80, 40),
+            "level3": pygame.Rect(410, 10, 80, 40),
+            "quit": pygame.Rect(500, 10, 80, 40),
+        }
+
         while running:
             self.screen.fill((255, 255, 255)) 
             self.draw_grid()
+            hovered = self.draw_button(self.screen, button_rect, "CLIQUE MOI", button_color, hover_color)
+
+            for name, rect in buttons.items():
+                hovered = rect.collidepoint(pygame.mouse.get_pos())
+                color = (200, 0, 0) if hovered else (100, 100, 100)
+                pygame.draw.rect(self.screen, color, rect)
+                text = font.render(name.upper(), True, (255, 255, 255))
+                self.screen.blit(text, text.get_rect(center=rect.center))
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -74,6 +101,19 @@ class DisplayGame:
                         self.logic.move(DIRECTIONS["left"])
                     elif event.key == pygame.K_RIGHT:
                         self.logic.move(DIRECTIONS["right"])
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    if buttons["reset"].collidepoint(event.pos):
+                        self.logic.reset()
+                    elif buttons["cancel"].collidepoint(event.pos):
+                        self.logic.undo()
+                    elif buttons["level1"].collidepoint(event.pos):
+                        self.load_level("niveau1.txt")  # Créé des fichiers pour chaque niveau ?
+                    elif buttons["level2"].collidepoint(event.pos):
+                        self.load_level("niveau2.txt")  # Créé des fichiers pour chaque niveau ?
+                    elif buttons["level3"].collidepoint(event.pos):
+                        self.load_level("niveau3.txt")  # Créé des fichiers pour chaque niveau ?
+                    elif buttons["quit"].collidepoint(event.pos):
+                        running = False
 
             pygame.display.flip()
             clock.tick(60)
