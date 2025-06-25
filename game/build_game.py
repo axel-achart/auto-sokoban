@@ -1,4 +1,5 @@
 from game.direction import DIRECTIONS
+import pygame
 
 class GameLogic:
     def __init__(self, matrix, player_position):
@@ -6,6 +7,10 @@ class GameLogic:
         self.player_position = player_position
         # Stocker les cibles pour pouvoir les remettre si besoin
         self.targets = [(r, c) for r, row in enumerate(matrix) for c, val in enumerate(row) if val == 1]
+
+        pygame.mixer.init()
+        self.sound_mouvement = pygame.mixer.Sound("assets/sounds/mouvement.mp3")
+        self.sound_mouvement.set_volume(1.0)
 
     def check_valid_moves(self, direction):
         dy, dx = direction
@@ -30,6 +35,9 @@ class GameLogic:
             dy, dx = direction
             y, x = self.player_position
             ny, nx = y + dy, x + dx
+
+            if self.sound_mouvement:
+                self.sound_mouvement.play()
 
             if self.matrix[ny][nx] == 2:
                 self.push(direction)

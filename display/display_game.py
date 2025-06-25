@@ -35,14 +35,25 @@ class DisplayGame:
         self.screen = pygame.display.set_mode((self.width, self.height))
         pygame.display.set_caption("Sokoban Game")
 
-    def draw_button(self, surface, rect, text, base_color, hover_color):
-        self.mouse_pos = pygame.mouse.get_pos()
-        self.is_hovered = rect.collidepoint(self.mouse_pos)
-        self.color = hover_color if self.is_hovered else base_color
-        pygame.draw.rect(surface, self.color, rect)
-        self.text_rect = self.text_surf.get_rect(center=rect.center)
-        self.surface.blit(self.text_surf, self.text_rect)
-        return self.is_hovered
+        pygame.mixer.init()
+        pygame.mixer.music.load("assets/sounds/music.mp3")
+        pygame.mixer.music.play(-1)
+        pygame.mixer.music.set_volume(0.4)
+
+
+    def draw_button(self, surface, rect, text, base_color, hover_color, font):
+        mouse_pos = pygame.mouse.get_pos()
+        is_hovered = rect.collidepoint(mouse_pos)
+        color = hover_color if is_hovered else base_color
+        pygame.draw.rect(surface, color, rect)
+
+        # Générer le texte du bouton ici
+        text_surf = font.render(text, True, (255, 255, 255))
+        text_rect = text_surf.get_rect(center=rect.center)
+        surface.blit(text_surf, text_rect)
+
+        return is_hovered
+
 
     def draw_grid(self):
         for y, row in enumerate(self.matrix):
@@ -74,11 +85,14 @@ class DisplayGame:
             "level3": pygame.Rect(410, 10, 80, 40),
             "quit": pygame.Rect(500, 10, 80, 40),
         }
+        button_rect = pygame.Rect(600, 10, 150, 40)
+        button_color = (50, 50, 200)
+        hover_color = (100, 100, 255)
 
         while running:
             self.screen.fill((255, 255, 255)) 
             self.draw_grid()
-            hovered = self.draw_button(self.screen, button_rect, "CLIQUE MOI", button_color, hover_color)
+            hovered = self.draw_button(self.screen, button_rect, "CLIQUE MOI", button_color, hover_color, font)
 
             for name, rect in buttons.items():
                 hovered = rect.collidepoint(pygame.mouse.get_pos())
