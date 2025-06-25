@@ -9,6 +9,10 @@ For each cell in matrix:
 """
 from display.display_game import DisplayGame
 import numpy as np
+from levels import Matrix
+
+# Charger la matrice depuis un fichier texte
+#game_matrix = Matrix.load_matrix_from_file("level1.txt")
 
 def initialize_matrix(rows, columns, obstacles, targets, boxes, player_position):
 
