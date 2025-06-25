@@ -1,56 +1,69 @@
-from direction import DIRECTIONS
+from game.direction import DIRECTIONS
 
 class GameLogic:
     def __init__(self, matrix, player_position):
         self.matrix = matrix
         self.player_position = player_position
+        # Stocker les cibles pour pouvoir les remettre si besoin
+        self.targets = [(r, c) for r, row in enumerate(matrix) for c, val in enumerate(row) if val == 1]
 
     def check_valid_moves(self, direction):
-        dx, dy = direction
-        x, y = self.player_position
-        nx, ny = x + dx, y + dy
+        dy, dx = direction
+        y, x = self.player_position
+        ny, nx = y + dy, x + dx
 
-        if not (0 <= nx < len(self.matrix) and 0 <= ny < len(self.matrix[0])):
+        # Correction 1 : inversion des dimensions Y/X
+        if not (0 <= ny < len(self.matrix) and 0 <= nx < len(self.matrix[0])):
             return False
 
-        cell = self.matrix[nx][ny]
+        cell = self.matrix[ny][nx]
 
-        if cell == "wall":
+        if cell == -1:  # obstacle
             return False
-        elif cell == "box":
+        elif cell == 2:  # box
             return self.check_valid_push(direction)
         else:
             return True
 
     def move(self, direction):
         if self.check_valid_moves(direction):
-            dx, dy = direction
-            x, y = self.player_position
-            nx, ny = x + dx, y + dy
+            dy, dx = direction
+            y, x = self.player_position
+            ny, nx = y + dy, x + dx
 
-            if self.matrix[nx][ny] == "box":
+            if self.matrix[ny][nx] == 2:
                 self.push(direction)
 
-            self.matrix[x][y] = "empty"
-            self.matrix[nx][ny] = "player"
-            self.player_position = (nx, ny)
+            # Remettre la valeur cible si nécessaire à l'ancienne position du joueur
+            if (y, x) in self.targets:
+                self.matrix[y][x] = 1
+            else:
+                self.matrix[y][x] = 0
+
+            self.matrix[ny][nx] = 3
+            self.player_position = (ny, nx)
 
     def check_valid_push(self, direction):
-        dx, dy = direction
-        x, y = self.player_position
-        bx, by = x + dx, y + dy
-        nx, ny = bx + dx, by + dy
+        dy, dx = direction
+        y, x = self.player_position
+        ny, nx = y + dy, x + dx
+        ny2, nx2 = ny + dy, nx + dx
 
-        if not (0 <= nx < len(self.matrix) and 0 <= ny < len(self.matrix[0])):
+        if not (0 <= ny2 < len(self.matrix) and 0 <= nx2 < len(self.matrix[0])):
             return False
 
-        return self.matrix[nx][ny] in ("empty", "target")
+        return self.matrix[ny2][nx2] in (0, 1)  # cases vides ou cibles
 
     def push(self, direction):
-        dx, dy = direction
-        x, y = self.player_position
-        bx, by = x + dx, y + dy
-        nx, ny = bx + dx, by + dy
+        dy, dx = direction
+        y, x = self.player_position
+        ny, nx = y + dy, x + dx
+        ny2, nx2 = ny + dy, nx + dx
 
-        self.matrix[bx][by] = "empty"
-        self.matrix[nx][ny] = "box"
+        # Remettre la valeur cible si nécessaire à l'ancienne position de la boîte
+        if (ny, nx) in self.targets:
+            self.matrix[ny][nx] = 1
+        else:
+            self.matrix[ny][nx] = 0
+
+        self.matrix[ny2][nx2] = 2

@@ -1,6 +1,8 @@
 from math import e
 import pygame
 from config import *
+from game.direction import DIRECTIONS
+from game.build_game import GameLogic
 
 COLORS = COLORS_INTERFACE
 
@@ -13,6 +15,21 @@ class DisplayGame:
         self.cols = len(matrix[0]) if self.rows > 0 else 0
         self.width = self.cols * CELL_SIZE
         self.height = self.rows * CELL_SIZE
+        # Trouver la position initiale du joueur dans la matrice
+        self.player_pos = None
+        for i, row in enumerate(self.matrix):
+            for j, cell in enumerate(row):
+                if cell == 3:
+                    self.player_pos = (i, j)
+                    break
+            if self.player_pos:
+                break
+
+        if self.player_pos is None:
+            raise ValueError("Le joueur ('player') est introuvable dans la matrice.")
+
+        self.logic = GameLogic(self.matrix, self.player_pos)
+
 
         pygame.init()
         self.screen = pygame.display.set_mode((self.width, self.height))
@@ -42,25 +59,23 @@ class DisplayGame:
         while running:
             self.screen.fill((255, 255, 255)) 
             self.draw_grid()
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    running = False
-                if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_ESCAPE:
-                        running = False
-                    elif event.key == pygame.K_UP:
-                        
-                    elif event.key == pygame.K_DOWN:
-                        
-                    elif event.key == pygame.K_LEFT:
-                        
-                    elif event.key == pygame.K_RIGHT:
-                        
-            pygame.display.flip()
-            clock.tick(60)
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
+                elif event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_ESCAPE:
+                        running = False
+                    elif event.key == pygame.K_UP:
+                        self.logic.move(DIRECTIONS["up"])
+                    elif event.key == pygame.K_DOWN:
+                        self.logic.move(DIRECTIONS["down"])
+                    elif event.key == pygame.K_LEFT:
+                        self.logic.move(DIRECTIONS["left"])
+                    elif event.key == pygame.K_RIGHT:
+                        self.logic.move(DIRECTIONS["right"])
+
+            pygame.display.flip()
+            clock.tick(60)
 
         pygame.quit()
