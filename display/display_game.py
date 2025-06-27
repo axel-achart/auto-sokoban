@@ -1,8 +1,9 @@
 from math import e
-import pygame
+import pygame, copy, time
 from config import *
 from game.direction import DIRECTIONS
 from game.build_game import GameLogic
+from game.sokoban_solver import SokobanSolver
 
 COLORS = COLORS_INTERFACE
 
@@ -70,6 +71,12 @@ class DisplayGame:
                     (x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE),
                     1
                 )
+    def play_solution(self, moves):
+        for move_dir, box_from, box_to in moves:
+            self.logic.move(DIRECTIONS[move_dir])
+            self.draw_grid()
+            pygame.display.flip()
+            pygame.time.delay(300)
 
     def run(self):
         running = True
@@ -82,6 +89,7 @@ class DisplayGame:
             "level1": pygame.Rect(230, 10, 80, 40),
             "level2": pygame.Rect(320, 10, 80, 40),
             "level3": pygame.Rect(410, 10, 80, 40),
+            "solve": pygame.Rect(600, 60, 150, 40),
             "quit": pygame.Rect(500, 10, 80, 40),
         }
         button_rect = pygame.Rect(600, 10, 150, 40)
@@ -135,7 +143,11 @@ class DisplayGame:
                         self.load_level("niveau3.txt")  # Créé des fichiers pour chaque niveau ?
                     elif buttons["quit"].collidepoint(event.pos):
                         running = False
-
+                    elif buttons["solve"].collidepoint(event.pos):
+                        solver = SokobanSolver(copy.deepcopy(self.matrix),self.player_pos)
+                        solution = solver.solve()
+                        if solution:
+                            self.play_solution(solution)
             pygame.display.flip()
             clock.tick(60)
 
