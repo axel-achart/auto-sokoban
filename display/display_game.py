@@ -15,11 +15,10 @@ class DisplayGame:
         self.cols = len(matrix[0]) if self.rows > 0 else 0
         self.width = self.cols * CELL_SIZE
         self.height = self.rows * CELL_SIZE
-        # Trouver la position initiale du joueur dans la matrice
         self.player_pos = None
         for i, row in enumerate(self.matrix):
             for j, cell in enumerate(row):
-                if cell == 3:
+                if cell == 3: 
                     self.player_pos = (i, j)
                     break
             if self.player_pos:
@@ -59,7 +58,11 @@ class DisplayGame:
         while running:
             self.screen.fill((255, 255, 255)) 
             self.draw_grid()
-
+            if self.logic.check_win():
+                font = pygame.font.Font(None, 74)
+                text = font.render("You Win!", True, (0, 255, 0))
+                text_rect = text.get_rect(center=(self.width // 2, self.height // 2))
+                self.screen.blit(text, text_rect) 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
