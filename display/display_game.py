@@ -28,6 +28,7 @@ class DisplayGame:
         if self.player_pos is None:
             raise ValueError("Le joueur ('player') est introuvable dans la matrice.")
 
+
         self.logic = GameLogic(self.matrix, self.player_pos)
 
 
@@ -134,7 +135,14 @@ class DisplayGame:
                     if buttons["reset"].collidepoint(event.pos):
                         self.logic.reset()
                     elif buttons["cancel"].collidepoint(event.pos):
-                        self.logic.undo()
+                        previous_state = self.logic.undo_move()
+                        if previous_state is not None:
+                            self.matrix = previous_state
+                            pygame.display.flip()
+                            clock.tick(60)
+                            print("State Undone")
+                        else:
+                            print("No State to Undo")
                     elif buttons["level1"].collidepoint(event.pos):
                         self.load_level("niveau1.txt")  # Créé des fichiers pour chaque niveau ?
                     elif buttons["level2"].collidepoint(event.pos):

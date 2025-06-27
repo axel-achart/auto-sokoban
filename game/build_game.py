@@ -1,3 +1,4 @@
+from copy import deepcopy
 from game.direction import DIRECTIONS
 import pygame
 
@@ -11,6 +12,8 @@ class GameLogic:
         pygame.mixer.init()
         self.sound_mouvement = pygame.mixer.Sound("assets/sounds/mouvement.mp3")
         self.sound_mouvement.set_volume(1.0)
+
+        self.move_history = []
 
     def check_valid_moves(self, direction):
         dy, dx = direction
@@ -35,6 +38,7 @@ class GameLogic:
             dy, dx = direction
             y, x = self.player_position
             ny, nx = y + dy, x + dx
+            self.save_state()
 
             if self.sound_mouvement:
                 self.sound_mouvement.play()
@@ -50,6 +54,7 @@ class GameLogic:
 
             self.matrix[ny][nx] = 3
             self.player_position = (ny, nx)
+            
 
     def check_valid_push(self, direction):
         dy, dx = direction
@@ -79,3 +84,12 @@ class GameLogic:
     def check_win(self):
         # Vérifie si toutes les cibles sont occupées par des boîtes
         return all(self.matrix[r][c] == 2 for r, c in self.targets)
+    
+    def save_state(self):
+        self.move_history.append(deepcopy(self.matrix))
+        print(f"State saved. Total moves: {len(self.move_history)}")
+
+    def undo_move(self):
+        if self.move_history:
+            return self.move_history.pop()
+        return None
