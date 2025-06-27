@@ -75,3 +75,7 @@ class GameLogic:
             self.matrix[ny][nx] = 0
 
         self.matrix[ny2][nx2] = 2
+
+    def check_win(self):
+        # Vérifie si toutes les cibles sont occupées par des boîtes
+        return all(self.matrix[r][c] == 2 for r, c in self.targets)
