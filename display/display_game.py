@@ -62,7 +62,10 @@ class DisplayGame:
                 font = pygame.font.Font(None, 74)
                 text = font.render("You Win!", True, (0, 255, 0))
                 text_rect = text.get_rect(center=(self.width // 2, self.height // 2))
-                self.screen.blit(text, text_rect) 
+                self.screen.blit(text, text_rect)
+                pygame.display.flip()
+                pygame.time.delay(2000)  # Pause pour afficher le message de victoire
+                running = False  # Quitter le jeu après la victoire
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
