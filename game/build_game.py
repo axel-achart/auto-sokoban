@@ -93,3 +93,16 @@ class GameLogic:
         if self.move_history:
             return self.move_history.pop()
         return None
+    def undo_move(self):
+        if self.move_history:
+            previous_state = self.move_history.pop()
+            self.matrix = previous_state
+        # Recalculer la position du joueur
+            for r, row in enumerate(self.matrix):
+                for c, val in enumerate(row):
+                    if val == 3:  # Joueur
+                        self.player_position = (r, c)
+                        break
+            print("Undo successful. Moves left:", len(self.move_history))
+        else:
+            print("No moves to undo.")

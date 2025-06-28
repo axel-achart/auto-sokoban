@@ -74,10 +74,30 @@ class DisplayGame:
                 )
     def play_solution(self, moves):
         for move_dir, box_from, box_to in moves:
+            if box_from and box_to:  # Si une boîte est poussée
+                print(f"Pushing box from {box_from} to {box_to}")
             self.logic.move(DIRECTIONS[move_dir])
             self.draw_grid()
             pygame.display.flip()
-            pygame.time.delay(300)
+            pygame.time.delay(300)  # Pause pour l'animation
+
+    def load_level(self, level_file):
+        try:
+            with open(f'levels/{level_file}', "r") as f:
+                self.matrix = [list(map(int, line.split())) for line in f]
+            self.rows = len(self.matrix)
+            self.cols = len(self.matrix[0]) if self.rows > 0 else 0
+            for r, row in enumerate(self.matrix):
+                for c, val in enumerate(row):
+                    if val == 3:  # Joueur
+                        self.player_pos = (r, c)
+                        break
+            self.logic = GameLogic(self.matrix, self.player_pos)
+            print(f"Niveau chargé à partir de {level_file}.")
+        except FileNotFoundError:
+            print(f"Erreur : le fichier {level_file} n'a pas été trouvé.")
+        except Exception as e:
+            print(f"Erreur lors du chargement du niveau : {e}")
 
     def run(self):
         running = True
@@ -152,10 +172,13 @@ class DisplayGame:
                     elif buttons["quit"].collidepoint(event.pos):
                         running = False
                     elif buttons["solve"].collidepoint(event.pos):
-                        solver = SokobanSolver(copy.deepcopy(self.matrix),self.player_pos)
+                        solver = SokobanSolver(copy.deepcopy(self.matrix), self.player_pos)
                         solution = solver.solve()
                         if solution:
                             self.play_solution(solution)
+                        else:
+                            print("No solution found.")
+
             pygame.display.flip()
             clock.tick(60)
 

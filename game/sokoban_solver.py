@@ -23,7 +23,6 @@ class SokobanSolver:
         return self.is_in_bounds(r, c) and matrix[r][c] != -1 and (r, c) not in boxes
 
     def reachable_positions(self, start, matrix, boxes):
-        """ BFS to find all positions the player can reach given the current state """
         visited = set()
         queue = deque([start])
         visited.add(start)
@@ -36,6 +35,7 @@ class SokobanSolver:
                     visited.add((ny, nx))
                     queue.append((ny, nx))
         return visited
+
     def is_deadlock_position(self, pos, matrix):
         r, c = pos
         if pos in self.targets:
@@ -46,51 +46,46 @@ class SokobanSolver:
                 return True  # Hors limite = mur virtuel
             return matrix[y][x] == -1  # Mur
 
-    # Coin haut-gauche, haut-droit, bas-gauche, bas-droit
+        # Vérification des coins
         if (is_blocking(r - 1, c) and is_blocking(r, c - 1)) or \
-            (is_blocking(r - 1, c) and is_blocking(r, c + 1)) or \
-            (is_blocking(r + 1, c) and is_blocking(r, c - 1)) or \
-            (is_blocking(r + 1, c) and is_blocking(r, c + 1)):
+           (is_blocking(r - 1, c) and is_blocking(r, c + 1)) or \
+           (is_blocking(r + 1, c) and is_blocking(r, c - 1)) or \
+           (is_blocking(r + 1, c) and is_blocking(r, c + 1)):
             return True
-
         return False
 
     def solve(self):
-        matrix = copy.deepcopy(self.original_matrix)
-        # Initial boxes
-        boxes = {(r, c) for r, row in enumerate(matrix) for c, v in enumerate(row) if v == 2}
+        initial_state = (self.start_player, tuple([(r, c) for r, row in enumerate(self.original_matrix) for c, v in enumerate(row) if v == 2]))  # Positions des boîtes
+        queue = deque([(initial_state, [])])  # Ajout d'une liste pour stocker les mouvements
         visited = set()
-        queue = deque()
-        queue.append((boxes, self.start_player, []))
-        visited.add(self.serialize_state(boxes, self.start_player))
+        visited.add(self.serialize_state(initial_state[1], self.start_player))
 
         while queue:
-            current_boxes, player, path = queue.popleft()
+            (player, boxes), moves = queue.popleft()
+            if self.is_win(boxes):
+                return moves  # Retourne la liste des mouvements nécessaires
 
-            if self.is_win(current_boxes):
-                return path
+            for direction_name, direction in DIRECTIONS.items():
+                new_player = (player[0] + direction[0], player[1] + direction[1])
+                if self.is_free(new_player[0], new_player[1], boxes, self.original_matrix):
+                    new_boxes = list(boxes)
+                    # Vérification si le joueur pousse une boîte
+                    if new_player in boxes:
+                        box_index = boxes.index(new_player)
+                        new_box = (new_player[0] + direction[0], new_player[1] + direction[1])
+                        if self.is_free(new_box[0], new_box[1], new_boxes, self.original_matrix):
+                            new_boxes[box_index] = new_box
+                            move = (direction_name, new_player, new_box)
+                            new_state = self.serialize_state(new_boxes, new_player)
+                            if new_state not in visited:
+                                visited.add(new_state)
+                                queue.append(((new_player, tuple(new_boxes)), moves + [move]))
+                        else:
+                            continue  # Ne peut pas pousser la boîte
+                    else:
+                        new_state = self.serialize_state(new_boxes, new_player)
+                        if new_state not in visited:
+                            visited.add(new_state)
+                            queue.append(((new_player, tuple(new_boxes)), moves + [(direction_name, None, None)]))
 
-            reachable = self.reachable_positions(player, matrix, current_boxes)
-
-            for box in current_boxes:
-                for dir_name, (dy, dx) in DIRECTIONS.items():
-                    by, bx = box
-                    py, px = by - dy, bx - dx  # position derrière la boîte
-                    ny, nx = by + dy, bx + dx  # destination de la boîte
-
-                    if (py, px) in reachable and self.is_free(ny, nx, current_boxes, matrix):
-                        if self.is_deadlock_position((ny, nx), matrix):
-                            continue
-
-                        new_boxes = set(current_boxes)
-                        new_boxes.remove((by, bx))
-                        new_boxes.add((ny, nx))
-                        
-                        new_player = (by, bx)  # après avoir poussé, le joueur est à la place de l’ancienne boîte
-
-                        state = self.serialize_state(new_boxes, new_player)
-                        if state not in visited:
-                            visited.add(state)
-                            queue.append((new_boxes, new_player, path + [(dir_name, (by, bx), (ny, nx))]))
-
-        return None
+        return None  # Aucune solution trouvée
