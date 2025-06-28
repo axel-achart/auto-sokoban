@@ -164,11 +164,11 @@ class DisplayGame:
                         else:
                             print("No State to Undo")
                     elif buttons["level1"].collidepoint(event.pos):
-                        self.load_level("niveau1.txt")  # Créé des fichiers pour chaque niveau ?
+                        self.load_level("niveau1.txt")  
                     elif buttons["level2"].collidepoint(event.pos):
-                        self.load_level("niveau2.txt")  # Créé des fichiers pour chaque niveau ?
+                        self.load_level("niveau2.txt")  
                     elif buttons["level3"].collidepoint(event.pos):
-                        self.load_level("niveau3.txt")  # Créé des fichiers pour chaque niveau ?
+                        self.load_level("niveau3.txt")  
                     elif buttons["quit"].collidepoint(event.pos):
                         running = False
                     elif buttons["solve"].collidepoint(event.pos):
