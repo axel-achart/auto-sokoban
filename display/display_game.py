@@ -4,6 +4,7 @@ from config import *
 from game.direction import DIRECTIONS
 from game.build_game import GameLogic
 from game.sokoban_solver import SokobanSolver
+import os
 
 COLORS = COLORS_INTERFACE
 
@@ -17,6 +18,9 @@ class DisplayGame:
         self.width = self.cols * CELL_SIZE
         self.height = self.rows * CELL_SIZE
         self.player_pos = None
+        self.initial_matrix = copy.deepcopy(matrix)
+        self.initial_player_pos = self.player_pos
+
         for i, row in enumerate(self.matrix):
             for j, cell in enumerate(row):
                 if cell == 3: 
@@ -37,9 +41,14 @@ class DisplayGame:
         pygame.display.set_caption("Sokoban Game")
 
         pygame.mixer.init()
-        pygame.mixer.music.load("assets/sounds/music.mp3")
+        pygame.mixer.music.load("auto-sokoban/assets/sounds/music.mp3")
         pygame.mixer.music.play(-1)
         pygame.mixer.music.set_volume(0.4)
+
+    def reset_to_initial_state(self):
+        self.matrix = copy.deepcopy(self.initial_matrix)
+        self.player_pos = self.initial_player_pos
+        self.logic = GameLogic(copy.deepcopy(self.matrix), self.player_pos)
 
 
     def draw_button(self, surface, rect, text, base_color, hover_color, font):
@@ -83,19 +92,28 @@ class DisplayGame:
 
     def load_level(self, level_file):
         try:
-            with open(f'levels/{level_file}', "r") as f:
-                self.matrix = [list(map(int, line.split())) for line in f]
+            base_dir = os.path.dirname(os.path.abspath(__file__))
+            level_path = os.path.join(base_dir, "..", "levels", level_file)
+            print(f"Chargement depuis : {level_path}")
+
+            with open(level_path, "r") as f:
+                self.matrix = [list(map(int, line.strip().split())) for line in f if line.strip()]
             self.rows = len(self.matrix)
             self.cols = len(self.matrix[0]) if self.rows > 0 else 0
+
             for r, row in enumerate(self.matrix):
                 for c, val in enumerate(row):
                     if val == 3:  # Joueur
                         self.player_pos = (r, c)
                         break
+                else:
+                    continue
+                break  
+
             self.logic = GameLogic(self.matrix, self.player_pos)
             print(f"Niveau chargé à partir de {level_file}.")
         except FileNotFoundError:
-            print(f"Erreur : le fichier {level_file} n'a pas été trouvé.")
+            print(f"Erreur : le fichier '{level_file}' n'a pas été trouvé dans le dossier 'levels/'.")
         except Exception as e:
             print(f"Erreur lors du chargement du niveau : {e}")
 
@@ -110,7 +128,7 @@ class DisplayGame:
             "level1": pygame.Rect(230, 10, 80, 40),
             "level2": pygame.Rect(320, 10, 80, 40),
             "level3": pygame.Rect(410, 10, 80, 40),
-            "solve": pygame.Rect(600, 60, 150, 40),
+            "solve": pygame.Rect(600, 10, 150, 40),
             "quit": pygame.Rect(500, 10, 80, 40),
         }
         button_rect = pygame.Rect(600, 10, 150, 40)
@@ -128,7 +146,6 @@ class DisplayGame:
                 pygame.display.flip()
                 pygame.time.delay(2000)  # Pause pour afficher le message de victoire
                 running = False  # Quitter le jeu après la victoire
-            hovered = self.draw_button(self.screen, button_rect, "CLIQUE MOI", button_color, hover_color, font)
 
             for name, rect in buttons.items():
                 hovered = rect.collidepoint(pygame.mouse.get_pos())
@@ -153,16 +170,22 @@ class DisplayGame:
                         self.logic.move(DIRECTIONS["right"])
                 elif event.type == pygame.MOUSEBUTTONDOWN:
                     if buttons["reset"].collidepoint(event.pos):
-                        self.logic.reset()
+                        self.reset_to_initial_state()
+
                     elif buttons["cancel"].collidepoint(event.pos):
                         previous_state = self.logic.undo_move()
                         if previous_state is not None:
-                            self.matrix = previous_state
+                            self.matrix, self.player_pos = previous_state
+                            self.logic.matrix = copy.deepcopy(self.matrix)
+                            self.logic.player_position = self.player_pos
                             pygame.display.flip()
                             clock.tick(60)
                             print("State Undone")
                         else:
                             print("No State to Undo")
+
+
+
                     elif buttons["level1"].collidepoint(event.pos):
                         self.load_level("niveau1.txt")  
                     elif buttons["level2"].collidepoint(event.pos):

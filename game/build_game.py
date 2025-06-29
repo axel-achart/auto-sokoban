@@ -1,6 +1,6 @@
 from copy import deepcopy
 from game.direction import DIRECTIONS
-import pygame
+import pygame, copy
 
 class GameLogic:
     def __init__(self, matrix, player_position):
@@ -10,7 +10,7 @@ class GameLogic:
         self.targets = [(r, c) for r, row in enumerate(matrix) for c, val in enumerate(row) if val == 1]
 
         pygame.mixer.init()
-        self.sound_mouvement = pygame.mixer.Sound("assets/sounds/mouvement.mp3")
+        self.sound_mouvement = pygame.mixer.Sound("auto-sokoban/assets/sounds/mouvement.mp3")
         self.sound_mouvement.set_volume(1.0)
 
         self.move_history = []
@@ -86,23 +86,25 @@ class GameLogic:
         return all(self.matrix[r][c] == 2 for r, c in self.targets)
     
     def save_state(self):
-        self.move_history.append(deepcopy(self.matrix))
+        # On sauvegarde un tuple : (copie matrice, position joueur)
+        self.move_history.append((deepcopy(self.matrix), self.player_position))
         print(f"State saved. Total moves: {len(self.move_history)}")
+
 
     def undo_move(self):
         if self.move_history:
-            return self.move_history.pop()
-        return None
-    def undo_move(self):
-        if self.move_history:
-            previous_state = self.move_history.pop()
-            self.matrix = previous_state
-        # Recalculer la position du joueur
-            for r, row in enumerate(self.matrix):
+            previous_matrix = self.move_history.pop()
+            # Retrouver la position du joueur dans previous_matrix :
+            for r, row in enumerate(previous_matrix):
                 for c, val in enumerate(row):
-                    if val == 3:  # Joueur
-                        self.player_position = (r, c)
+                    if val == 3:
+                        player_pos = (r, c)
                         break
-            print("Undo successful. Moves left:", len(self.move_history))
-        else:
-            print("No moves to undo.")
+                else:
+                    continue
+                break
+            else:
+                player_pos = None  # cas improbable
+
+            return previous_matrix, player_pos
+        return None

@@ -18,8 +18,8 @@ def initialize_matrix(rows, columns, obstacles, targets, boxes, player_position)
     return matrix
 
 
-rows = 10
-columns = 10
+rows = 11
+columns = 11
 obstacles = [(0, 0), (0, 1), (1, 0)]
 targets = [(1, 2), (2, 2)]
 boxes = [(2, 1),(3,3)]
