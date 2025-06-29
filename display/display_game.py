@@ -6,6 +6,7 @@ from game.build_game import GameLogic
 from game.sokoban_solver import SokobanSolver
 import os
 
+
 COLORS = COLORS_INTERFACE
 
 CELL_SIZE = CELL_SIZE_
@@ -39,13 +40,15 @@ class DisplayGame:
             3: pygame.image.load(os.path.join("assets", "img", "player.png")), # Joueur
             4: pygame.image.load(os.path.join("assets", "img", "goal.png")), # Cible
         }
+        for key in self.images:
+            self.images[key] = pygame.transform.scale(self.images[key], (CELL_SIZE, CELL_SIZE))
 
         pygame.init()
         self.screen = pygame.display.set_mode((self.width, self.height))
         pygame.display.set_caption("Sokoban Game")
 
         pygame.mixer.init()
-        pygame.mixer.music.load("auto-sokoban/assets/sounds/music.mp3")
+        pygame.mixer.music.load("assets/sounds/music.mp3")
         pygame.mixer.music.play(-1)
         pygame.mixer.music.set_volume(0.4)
 
@@ -231,7 +234,12 @@ class DisplayGame:
                         solver = SokobanSolver(copy.deepcopy(self.matrix), self.player_pos)
                         solution = solver.solve()
                         if solution:
-                            print("Niveau solvable ! Positions boîtes finales :", solution)
+                            print("Résolution trouvée :", solution)
+                            for move in solution:
+                                self.logic.move(DIRECTIONS[move])
+                                self.draw_grid()
+                                pygame.display.flip()
+                                pygame.time.delay(300)
                         else:
                             print("Aucune solution trouvée.")
 

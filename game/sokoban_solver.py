@@ -1,100 +1,92 @@
 from collections import deque
-import copy
-from game.direction import DIRECTIONS
+
+class State:
+    def __init__(self, player_pos, box_positions):
+        self.player = player_pos
+        self.boxes = frozenset(box_positions)
+
+    def __hash__(self):
+        return hash((self.player, self.boxes))
+
+    def __eq__(self, other):
+        return self.player == other.player and self.boxes == other.boxes
+
 
 class SokobanSolver:
-    def __init__(self, matrix, player_pos):
-        self.original_matrix = matrix
-        self.start_player = player_pos
-        self.targets = [(r, c) for r, row in enumerate(matrix) for c, v in enumerate(row) if v == 1]
-        self.boxes = [(r, c) for r, row in enumerate(matrix) for c, v in enumerate(row) if v == 2]  # boîtes au départ
-        self.rows = len(matrix)
-        self.cols = len(matrix[0])
+    def __init__(self, matrix, player_position):
+        self.matrix = matrix
+        self.player_position = player_position
+        self.start_state = self._get_initial_state()
+        self.goal_positions = self._get_goal_positions()
 
+    def _get_initial_state(self):
+        boxes = set()
+        for i, row in enumerate(self.matrix):
+            for j, cell in enumerate(row):
+                if cell == 2:  # caisse
+                    boxes.add((i, j))
+        return State(self.player_position, boxes)
 
-    def is_in_bounds(self, y, x):
-        return 0 <= y < len(self.original_matrix) and 0 <= x < len(self.original_matrix[0])
-    
-    def is_free(self, y, x, boxes, matrix):
-        if not self.is_in_bounds(y, x):
-            return False
-        if matrix[y][x] == -1:  # Mur
-            return False
-        if (y, x) in boxes:  # Boîte
-            return False
-        return True
-    
-    
-    def is_win(self, boxes):
-        return all(pos in self.targets for pos in boxes)
+    def _get_goal_positions(self):
+        goals = set()
+        for i, row in enumerate(self.matrix):
+            for j, cell in enumerate(row):
+                if cell == 1:  # cible
+                    goals.add((i, j))
+        return frozenset(goals)
 
-    def serialize_state(self, boxes, player):
-        return (tuple(sorted(boxes)), player)
+    def _is_inside(self, x, y):
+        return 0 <= x < len(self.matrix) and 0 <= y < len(self.matrix[0])
 
-    def reachable_positions(self, start, matrix, boxes):
-        visited = set()
-        queue = deque([start])
-        visited.add(start)
+    def _get_neighbors(self, state):
+        directions = {
+            "up": (-1, 0),
+            "down": (1, 0),
+            "left": (0, -1),
+            "right": (0, 1)
+        }
 
-        while queue:
-            y, x = queue.popleft()
-            for dy, dx in DIRECTIONS.values():
-                ny, nx = y + dy, x + dx
-                if (ny, nx) not in visited and self.is_free(ny, nx, boxes, matrix):
-                    visited.add((ny, nx))
-                    queue.append((ny, nx))
-        return visited
+        neighbors = []
 
-    def is_deadlock_position(self, pos, boxes):
-        r, c = pos
-        if pos in self.targets:
-            return False  # Une cible n'est jamais considérée bloquée
+        for direction, (dy, dx) in directions.items():
+            y, x = state.player
+            ny, nx = y + dy, x + dx
 
-        def is_blocking(y, x):
-            if not self.is_in_bounds(y, x):
-                return True  # Hors limite = mur virtuel
-            return self.original_matrix[y][x] == -1 or (y, x) in boxes  # Mur ou autre boîte
+            if not self._is_inside(ny, nx) or self.matrix[ny][nx] == -1:
+                continue
 
-        # Vérification des coins
-        if (is_blocking(r - 1, c) and is_blocking(r, c - 1)) or \
-           (is_blocking(r - 1, c) and is_blocking(r, c + 1)) or \
-           (is_blocking(r + 1, c) and is_blocking(r, c - 1)) or \
-           (is_blocking(r + 1, c) and is_blocking(r, c + 1)):
-            return True
-        # Vérification si la boîte ne peut pas atteindre une cible
-        reachable = self.reachable_positions(pos, self.original_matrix, boxes)
-        if not any(target in reachable for target in self.targets):
-            return True
-        
-        return False
+            if (ny, nx) in state.boxes:
+                ny2, nx2 = ny + dy, nx + dx
+                if not self._is_inside(ny2, nx2):
+                    continue
+                if self.matrix[ny2][nx2] == -1 or (ny2, nx2) in state.boxes:
+                    continue
+                new_boxes = set(state.boxes)
+                new_boxes.remove((ny, nx))
+                new_boxes.add((ny2, nx2))
+                neighbors.append((State((ny, nx), new_boxes), direction))
+            else:
+                neighbors.append((State((ny, nx), state.boxes), direction))
+
+        return neighbors
 
     def solve(self):
-        initial_state = (self.start_player, tuple(self.boxes))  # positions des boîtes au départ
-        queue = deque([initial_state])
         visited = set()
-        visited.add(self.serialize_state(tuple(self.boxes), self.start_player))
+        queue = deque()
+        queue.append((self.start_state, []))
 
         while queue:
-            player, boxes = queue.popleft()
-            if self.is_win(boxes):
-                return boxes  # Retourne les positions des boîtes si gagnant
+            current_state, path = queue.popleft()
 
-            for direction in DIRECTIONS.values():
-                new_player = (player[0] + direction[0], player[1] + direction[1])
-                if self.is_free(new_player[0], new_player[1], boxes, self.original_matrix):
-                    new_boxes = list(boxes)
-                    # Vérification si le joueur pousse une boîte
-                    if new_player in boxes:
-                        box_index = boxes.index(new_player)
-                        new_box = (new_player[0] + direction[0], new_player[1] + direction[1])
-                        if self.is_free(new_box[0], new_box[1], new_boxes, self.original_matrix):
-                            new_boxes[box_index] = new_box
-                        else:
-                            continue  # Ne peut pas pousser la boîte
-                    new_state = self.serialize_state(new_boxes, new_player)
-                    if new_state not in visited:
-                        visited.add(new_state)
-                        queue.append((new_player, tuple(new_boxes)))
+            if current_state.boxes == self.goal_positions:
+                return path  # Liste de directions : ["up", "left", "right", ...]
 
-        return None  # Aucune solution trouvée
+            if current_state in visited:
+                continue
 
+            visited.add(current_state)
+
+            for neighbor, direction in self._get_neighbors(current_state):
+                queue.append((neighbor, path + [direction]))
+
+        return None  # Pas de solution
