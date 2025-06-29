@@ -10,7 +10,7 @@ class GameLogic:
         self.targets = [(r, c) for r, row in enumerate(matrix) for c, val in enumerate(row) if val == 1]
 
         pygame.mixer.init()
-        self.sound_mouvement = pygame.mixer.Sound("auto-sokoban/assets/sounds/mouvement.mp3")
+        self.sound_mouvement = pygame.mixer.Sound("assets/sounds/mouvement.mp3")
         self.sound_mouvement.set_volume(1.0)
 
         self.move_history = []
