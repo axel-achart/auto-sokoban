@@ -32,6 +32,14 @@ class DisplayGame:
             raise ValueError("Le joueur ('player') est introuvable dans la matrice.")
         self.logic = GameLogic(self.matrix, self.player_pos)
 
+        self.images = {
+            0: pygame.image.load(os.path.join("assets", "img", "floor.png")),  # Case vide
+            1: pygame.image.load(os.path.join("assets", "img", "wall.png")),   # Mur
+            2: pygame.image.load(os.path.join("assets", "img", "box.png")),    # Boîte
+            3: pygame.image.load(os.path.join("assets", "img", "player.png")), # Joueur
+            4: pygame.image.load(os.path.join("assets", "img", "goal.png")), # Cible
+        }
+
         pygame.init()
         self.screen = pygame.display.set_mode((self.width, self.height))
         pygame.display.set_caption("Sokoban Game")
@@ -76,20 +84,40 @@ class DisplayGame:
 
 
     def draw_grid(self):
+        # Charger les images une seule fois (au premier appel)
+        if not hasattr(self, 'images'):
+            self.images = {
+                0: pygame.image.load("assets/img/empty.png").convert_alpha(),
+                1: pygame.image.load("assets/img/wall.png").convert_alpha(),
+                2: pygame.image.load("assets/img/box.png").convert_alpha(),
+                3: pygame.image.load("assets/img/player.png").convert_alpha(),
+                4: pygame.image.load("assets/img/target.png").convert_alpha()
+            }
+            # Redimensionner les images à CELL_SIZE
+            for key in self.images:
+                self.images[key] = pygame.transform.scale(self.images[key], (CELL_SIZE, CELL_SIZE))
+
         for y, row in enumerate(self.matrix):
             for x, cell in enumerate(row):
-                color = COLORS.get(cell, (200, 200, 255))
-                pygame.draw.rect(
-                    self.screen,
-                    color,
-                    (x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE)
-                )
+                image = self.images.get(cell)
+                if image:
+                    self.screen.blit(image, (x * CELL_SIZE, y * CELL_SIZE))
+                else:
+                    # Couleur par défaut si pas d'image
+                    pygame.draw.rect(
+                        self.screen,
+                        (200, 200, 255),
+                        (x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE)
+                    )
+
+                # Bordure fine autour de chaque cellule
                 pygame.draw.rect(
                     self.screen,
                     (100, 100, 100),
                     (x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE),
                     1
                 )
+
 
     def play_solution(self, moves):
         for move_dir, box_from, box_to in moves:
