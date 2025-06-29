@@ -7,8 +7,10 @@ class SokobanSolver:
         self.original_matrix = matrix
         self.start_player = player_pos
         self.targets = [(r, c) for r, row in enumerate(matrix) for c, v in enumerate(row) if v == 1]
+        self.boxes = [(r, c) for r, row in enumerate(matrix) for c, v in enumerate(row) if v == 2]  # boîtes au départ
         self.rows = len(matrix)
         self.cols = len(matrix[0])
+
 
     def is_in_bounds(self, y, x):
         return 0 <= y < len(self.original_matrix) and 0 <= x < len(self.original_matrix[0])
@@ -67,10 +69,10 @@ class SokobanSolver:
         return False
 
     def solve(self):
-        initial_state = (self.start_player, tuple())  # (position du joueur, positions des boîtes)
+        initial_state = (self.start_player, tuple(self.boxes))  # positions des boîtes au départ
         queue = deque([initial_state])
         visited = set()
-        visited.add(self.serialize_state((), self.start_player))
+        visited.add(self.serialize_state(tuple(self.boxes), self.start_player))
 
         while queue:
             player, boxes = queue.popleft()

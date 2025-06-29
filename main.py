@@ -1,4 +1,3 @@
-
 from display.display_game import DisplayGame
 import numpy as np
 

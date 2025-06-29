@@ -28,13 +28,9 @@ class DisplayGame:
                     break
             if self.player_pos:
                 break
-
         if self.player_pos is None:
             raise ValueError("Le joueur ('player') est introuvable dans la matrice.")
-
-
         self.logic = GameLogic(self.matrix, self.player_pos)
-
 
         pygame.init()
         self.screen = pygame.display.set_mode((self.width, self.height))
@@ -46,9 +42,24 @@ class DisplayGame:
         pygame.mixer.music.set_volume(0.4)
 
     def reset_to_initial_state(self):
+        # Restaurer la matrice initiale
+        self.initial_matrix = copy.deepcopy(self.initial_matrix)
         self.matrix = copy.deepcopy(self.initial_matrix)
-        self.player_pos = self.initial_player_pos
+
+        # Rechercher la position du joueur dans la nouvelle matrice
+        for i, row in enumerate(self.matrix):
+            for j, cell in enumerate(row):
+                if cell == 3:
+                    self.player_pos = (i, j)
+                    break
+            if self.player_pos:
+                break
+
+        # Réinstancier la logique, mais surtout... lier la matrice affichée à celle de la logique
         self.logic = GameLogic(copy.deepcopy(self.matrix), self.player_pos)
+        self.matrix = self.logic.matrix  # 🔥 L'affichage et la logique utilisent la MÊME matrice
+
+
 
 
     def draw_button(self, surface, rect, text, base_color, hover_color, font):
@@ -57,7 +68,6 @@ class DisplayGame:
         color = hover_color if is_hovered else base_color
         pygame.draw.rect(surface, color, rect)
 
-        # Générer le texte du bouton ici
         text_surf = font.render(text, True, (255, 255, 255))
         text_rect = text_surf.get_rect(center=rect.center)
         surface.blit(text_surf, text_rect)
@@ -68,27 +78,27 @@ class DisplayGame:
     def draw_grid(self):
         for y, row in enumerate(self.matrix):
             for x, cell in enumerate(row):
-                color = COLORS.get(cell, (200, 200, 255))  # gris par défaut
+                color = COLORS.get(cell, (200, 200, 255))
                 pygame.draw.rect(
                     self.screen,
                     color,
                     (x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE)
                 )
-                # Ligne de séparation
                 pygame.draw.rect(
                     self.screen,
                     (100, 100, 100),
                     (x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE),
                     1
                 )
+
     def play_solution(self, moves):
         for move_dir, box_from, box_to in moves:
-            if box_from and box_to:  # Si une boîte est poussée
+            if box_from and box_to: 
                 print(f"Pushing box from {box_from} to {box_to}")
             self.logic.move(DIRECTIONS[move_dir])
             self.draw_grid()
             pygame.display.flip()
-            pygame.time.delay(300)  # Pause pour l'animation
+            pygame.time.delay(300) 
 
     def load_level(self, level_file):
         try:
@@ -144,8 +154,8 @@ class DisplayGame:
                 text_rect = text.get_rect(center=(self.width // 2, self.height // 2))
                 self.screen.blit(text, text_rect)
                 pygame.display.flip()
-                pygame.time.delay(2000)  # Pause pour afficher le message de victoire
-                running = False  # Quitter le jeu après la victoire
+                pygame.time.delay(3000)
+                running = False
 
             for name, rect in buttons.items():
                 hovered = rect.collidepoint(pygame.mouse.get_pos())
@@ -171,20 +181,14 @@ class DisplayGame:
                 elif event.type == pygame.MOUSEBUTTONDOWN:
                     if buttons["reset"].collidepoint(event.pos):
                         self.reset_to_initial_state()
-
                     elif buttons["cancel"].collidepoint(event.pos):
                         previous_state = self.logic.undo_move()
                         if previous_state is not None:
                             self.matrix, self.player_pos = previous_state
-                            self.logic.matrix = copy.deepcopy(self.matrix)
-                            self.logic.player_position = self.player_pos
-                            pygame.display.flip()
-                            clock.tick(60)
+                            self.logic = GameLogic(copy.deepcopy(self.matrix), self.player_pos)
                             print("State Undone")
                         else:
                             print("No State to Undo")
-
-
 
                     elif buttons["level1"].collidepoint(event.pos):
                         self.load_level("niveau1.txt")  
@@ -194,15 +198,15 @@ class DisplayGame:
                         self.load_level("niveau3.txt")  
                     elif buttons["quit"].collidepoint(event.pos):
                         running = False
+
                     elif buttons["solve"].collidepoint(event.pos):
                         solver = SokobanSolver(copy.deepcopy(self.matrix), self.player_pos)
                         solution = solver.solve()
                         if solution:
-                            self.play_solution(solution)
+                            print("Niveau solvable ! Positions boîtes finales :", solution)
                         else:
-                            print("No solution found.")
+                            print("Aucune solution trouvée.")
 
             pygame.display.flip()
             clock.tick(60)
-
         pygame.quit()
