@@ -1,4 +1,6 @@
+from copy import deepcopy
 from game.direction import DIRECTIONS
+import pygame
 
 class GameLogic:
     def __init__(self, matrix, player_position):
@@ -6,6 +8,12 @@ class GameLogic:
         self.player_position = player_position
         # Stocker les cibles pour pouvoir les remettre si besoin
         self.targets = [(r, c) for r, row in enumerate(matrix) for c, val in enumerate(row) if val == 1]
+
+        pygame.mixer.init()
+        self.sound_mouvement = pygame.mixer.Sound("assets/sounds/mouvement.mp3")
+        self.sound_mouvement.set_volume(1.0)
+
+        self.move_history = []
 
     def check_valid_moves(self, direction):
         dy, dx = direction
@@ -30,6 +38,10 @@ class GameLogic:
             dy, dx = direction
             y, x = self.player_position
             ny, nx = y + dy, x + dx
+            self.save_state()
+
+            if self.sound_mouvement:
+                self.sound_mouvement.play()
 
             if self.matrix[ny][nx] == 2:
                 self.push(direction)
@@ -42,6 +54,7 @@ class GameLogic:
 
             self.matrix[ny][nx] = 3
             self.player_position = (ny, nx)
+            
 
     def check_valid_push(self, direction):
         dy, dx = direction
@@ -71,3 +84,25 @@ class GameLogic:
     def check_win(self):
         # Vérifie si toutes les cibles sont occupées par des boîtes
         return all(self.matrix[r][c] == 2 for r, c in self.targets)
+    
+    def save_state(self):
+        self.move_history.append(deepcopy(self.matrix))
+        print(f"State saved. Total moves: {len(self.move_history)}")
+
+    def undo_move(self):
+        if self.move_history:
+            return self.move_history.pop()
+        return None
+    def undo_move(self):
+        if self.move_history:
+            previous_state = self.move_history.pop()
+            self.matrix = previous_state
+        # Recalculer la position du joueur
+            for r, row in enumerate(self.matrix):
+                for c, val in enumerate(row):
+                    if val == 3:  # Joueur
+                        self.player_position = (r, c)
+                        break
+            print("Undo successful. Moves left:", len(self.move_history))
+        else:
+            print("No moves to undo.")
