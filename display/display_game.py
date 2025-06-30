@@ -35,10 +35,10 @@ class DisplayGame:
 
         self.images = {
             0: pygame.image.load(os.path.join("assets", "img", "floor.png")),  # Case vide
-            1: pygame.image.load(os.path.join("assets", "img", "wall.png")),   # Mur
+            1: pygame.image.load(os.path.join("assets", "img", "goal.png")),   # cible
             2: pygame.image.load(os.path.join("assets", "img", "box.png")),    # Boîte
             3: pygame.image.load(os.path.join("assets", "img", "player.png")), # Joueur
-            4: pygame.image.load(os.path.join("assets", "img", "goal.png")), # Cible
+            4: pygame.image.load(os.path.join("assets", "img", "wall.png")), # mur
         }
         for key in self.images:
             self.images[key] = pygame.transform.scale(self.images[key], (CELL_SIZE, CELL_SIZE))
@@ -122,14 +122,7 @@ class DisplayGame:
                 )
 
 
-    def play_solution(self, moves):
-        for move_dir, box_from, box_to in moves:
-            if box_from and box_to: 
-                print(f"Pushing box from {box_from} to {box_to}")
-            self.logic.move(DIRECTIONS[move_dir])
-            self.draw_grid()
-            pygame.display.flip()
-            pygame.time.delay(300) 
+    #
 
     def load_level(self, level_file):
         try:
