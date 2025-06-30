@@ -1,19 +1,18 @@
-from math import e
-from matplotlib.pyplot import grid
-import pygame, copy, time
+# Correction du fichier display_game.py
+import pygame, copy, json, os
 from config import *
 from game.direction import DIRECTIONS
 from game.build_game import GameLogic
 from game.sokoban_solver import SokobanSolver
-import os
-
 
 COLORS = COLORS_INTERFACE
-
 CELL_SIZE = CELL_SIZE_
 
 class DisplayGame:
-    def __init__(self, matrix):
+    def __init__(self, matrix, username="Unknown", level_id=0):
+        self.username = username
+        self.current_level_id = level_id
+
         self.matrix = matrix
         self.rows = len(matrix)
         self.cols = len(matrix[0]) if self.rows > 0 else 0
@@ -21,7 +20,6 @@ class DisplayGame:
         self.height = self.rows * CELL_SIZE
         self.player_pos = None
         self.initial_matrix = copy.deepcopy(matrix)
-        self.initial_player_pos = self.player_pos
 
         for i, row in enumerate(self.matrix):
             for j, cell in enumerate(row):
@@ -32,14 +30,15 @@ class DisplayGame:
                 break
         if self.player_pos is None:
             raise ValueError("Le joueur ('player') est introuvable dans la matrice.")
+
         self.logic = GameLogic(self.matrix, self.player_pos)
 
         self.images = {
-            0: pygame.image.load(os.path.join("assets", "img", "floor.png")),  # Case vide
-            1: pygame.image.load(os.path.join("assets", "img", "goal.png")),   # cible
-            2: pygame.image.load(os.path.join("assets", "img", "box.png")),    # Boîte
-            3: pygame.image.load(os.path.join("assets", "img", "player.png")), # Joueur
-            4: pygame.image.load(os.path.join("assets", "img", "wall.png")), # mur
+            0: pygame.image.load(os.path.join("assets", "img", "floor.png")),
+            1: pygame.image.load(os.path.join("assets", "img", "goal.png")),
+            2: pygame.image.load(os.path.join("assets", "img", "box.png")),
+            3: pygame.image.load(os.path.join("assets", "img", "player.png")),
+            -1: pygame.image.load(os.path.join("assets", "img", "wall.png")),
         }
         for key in self.images:
             self.images[key] = pygame.transform.scale(self.images[key], (CELL_SIZE, CELL_SIZE))
@@ -54,11 +53,7 @@ class DisplayGame:
         pygame.mixer.music.set_volume(0.4)
 
     def reset_to_initial_state(self):
-        # Restaurer la matrice initiale
-        self.initial_matrix = copy.deepcopy(self.initial_matrix)
         self.matrix = copy.deepcopy(self.initial_matrix)
-
-        # Rechercher la position du joueur dans la nouvelle matrice
         for i, row in enumerate(self.matrix):
             for j, cell in enumerate(row):
                 if cell == 3:
@@ -66,13 +61,8 @@ class DisplayGame:
                     break
             if self.player_pos:
                 break
-
-        # Réinstancier la logique, mais surtout... lier la matrice affichée à celle de la logique
         self.logic = GameLogic(copy.deepcopy(self.matrix), self.player_pos)
-        self.matrix = self.logic.matrix  # 🔥 L'affichage et la logique utilisent la MÊME matrice
-
-
-
+        self.matrix = self.logic.matrix
 
     def draw_button(self, surface, rect, text, base_color, hover_color, font):
         mouse_pos = pygame.mouse.get_pos()
@@ -86,51 +76,18 @@ class DisplayGame:
 
         return is_hovered
 
-
     def draw_grid(self):
-        # Charger les images une seule fois (au premier appel)
-        if not hasattr(self, 'images'):
-            self.images = {
-                0: pygame.image.load("assets/img/empty.png").convert_alpha(),
-                1: pygame.image.load("assets/img/wall.png").convert_alpha(),
-                2: pygame.image.load("assets/img/box.png").convert_alpha(),
-                3: pygame.image.load("assets/img/player.png").convert_alpha(),
-                4: pygame.image.load("assets/img/target.png").convert_alpha()
-            }
-            # Redimensionner les images à CELL_SIZE
-            for key in self.images:
-                self.images[key] = pygame.transform.scale(self.images[key], (CELL_SIZE, CELL_SIZE))
-
         for y, row in enumerate(self.matrix):
             for x, cell in enumerate(row):
                 image = self.images.get(cell)
                 if image:
                     self.screen.blit(image, (x * CELL_SIZE, y * CELL_SIZE))
-                else:
-                    # Couleur par défaut si pas d'image
-                    pygame.draw.rect(
-                        self.screen,
-                        (200, 200, 255),
-                        (x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE)
-                    )
+                pygame.draw.rect(self.screen, (100, 100, 100), (x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE), 1)
 
-                # Bordure fine autour de chaque cellule
-                pygame.draw.rect(
-                    self.screen,
-                    (100, 100, 100),
-                    (x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE),
-                    1
-                )
-
-
-    #
-
-    def load_level(self, level_file):
+    def load_level(self, level_file, level_id):
         try:
             base_dir = os.path.dirname(os.path.abspath(__file__))
             level_path = os.path.join(base_dir, "..", "levels", level_file)
-            print(f"Chargement depuis : {level_path}")
-
             with open(level_path, "r") as f:
                 self.matrix = [list(map(int, line.strip().split())) for line in f if line.strip()]
             self.rows = len(self.matrix)
@@ -138,25 +95,23 @@ class DisplayGame:
 
             for r, row in enumerate(self.matrix):
                 for c, val in enumerate(row):
-                    if val == 3:  # Joueur
+                    if val == 3:
                         self.player_pos = (r, c)
                         break
                 else:
                     continue
-                break  
+                break
 
             self.logic = GameLogic(self.matrix, self.player_pos)
-            print(f"Niveau chargé à partir de {level_file}.")
-        except FileNotFoundError:
-            print(f"Erreur : le fichier '{level_file}' n'a pas été trouvé dans le dossier 'levels/'.")
+            self.current_level_id = level_id
         except Exception as e:
             print(f"Erreur lors du chargement du niveau : {e}")
 
     def run(self):
         running = True
         clock = pygame.time.Clock()
-
         font = pygame.font.SysFont(None, 30)
+
         buttons = {
             "reset": pygame.Rect(10, 10, 100, 40),
             "cancel": pygame.Rect(120, 10, 100, 40),
@@ -166,16 +121,29 @@ class DisplayGame:
             "solve": pygame.Rect(600, 10, 150, 40),
             "quit": pygame.Rect(500, 10, 80, 40),
         }
-        button_rect = pygame.Rect(600, 10, 150, 40)
-        button_color = (50, 50, 200)
-        hover_color = (100, 100, 255)
 
         while running:
             self.screen.fill((255, 255, 255)) 
             self.draw_grid()
+
             if self.logic.check_win():
-                font = pygame.font.Font(None, 74)
-                text = font.render("You Win!", True, (0, 255, 0))
+                # --- Mise à jour du score ---
+                users_file = os.path.join("data", "users.json")
+                if os.path.exists(users_file):
+                    with open(users_file, "r") as f:
+                        users = json.load(f)
+                    for user in users:
+                        if user["name"] == self.username:
+                            move_count = len(self.logic.move_history)
+                            prev_score = user["scores"].get(str(self.current_level_id))
+                            if prev_score is None or move_count < prev_score:
+                                user["scores"][str(self.current_level_id)] = move_count
+                            break
+                    with open(users_file, "w") as f:
+                        json.dump(users, f, indent=4)
+
+                font_win = pygame.font.Font(None, 74)
+                text = font_win.render("You Win!", True, (0, 255, 0))
                 text_rect = text.get_rect(center=(self.width // 2, self.height // 2))
                 self.screen.blit(text, text_rect)
                 pygame.display.flip()
@@ -209,36 +177,26 @@ class DisplayGame:
                     elif buttons["cancel"].collidepoint(event.pos):
                         if self.logic.move_history:
                             self.logic.undo()
-                            self.matrix = self.logic.matrix  # Sync display matrix with logic
+                            self.matrix = self.logic.matrix
                             pygame.time.delay(100)
                             self.draw_grid()
-                            print("State Undone")
-                            print(self.matrix)
-                        else:
-                            print("No State to Undo")
-
                     elif buttons["level1"].collidepoint(event.pos):
-                        self.load_level("niveau1.txt")  
+                        self.load_level("niveau1.txt", 1)
                     elif buttons["level2"].collidepoint(event.pos):
-                        self.load_level("niveau2.txt")  
+                        self.load_level("niveau2.txt", 2)
                     elif buttons["level3"].collidepoint(event.pos):
-                        self.load_level("niveau3.txt")  
+                        self.load_level("niveau3.txt", 3)
                     elif buttons["quit"].collidepoint(event.pos):
                         running = False
-
                     elif buttons["solve"].collidepoint(event.pos):
                         solver = SokobanSolver(copy.deepcopy(self.matrix), self.player_pos)
                         solution = solver.solve()
                         if solution:
-                            print("Résolution trouvée :", solution)
                             for move in solution:
                                 self.logic.move(DIRECTIONS[move])
                                 self.draw_grid()
                                 pygame.display.flip()
                                 pygame.time.delay(300)
-                        else:
-                            print("Aucune solution trouvée.")
-
             pygame.display.flip()
             clock.tick(60)
         pygame.quit()
