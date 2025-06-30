@@ -79,10 +79,16 @@ class DisplayGame:
     def draw_grid(self):
         for y, row in enumerate(self.matrix):
             for x, cell in enumerate(row):
-                image = self.images.get(cell)
+                # Ne jamais afficher '3' depuis la matrice (on l’affiche à part après)
+                image = self.images.get(cell if cell != 3 else 0)
                 if image:
                     self.screen.blit(image, (x * CELL_SIZE, y * CELL_SIZE))
                 pygame.draw.rect(self.screen, (100, 100, 100), (x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE), 1)
+
+        # Afficher le joueur à sa position réelle
+        py, px = self.logic.player_position
+        self.screen.blit(self.images[3], (px * CELL_SIZE, py * CELL_SIZE))
+
 
     def load_level(self, level_file, level_id):
         try:
@@ -193,10 +199,16 @@ class DisplayGame:
                         solution = solver.solve()
                         if solution:
                             for move in solution:
+                                for event in pygame.event.get():  # permet le rendu fluide
+                                    if event.type == pygame.QUIT:
+                                        pygame.quit()
+                                        return
                                 self.logic.move(DIRECTIONS[move])
+                                self.screen.fill((255, 255, 255))
                                 self.draw_grid()
                                 pygame.display.flip()
                                 pygame.time.delay(300)
+
             pygame.display.flip()
             clock.tick(60)
         pygame.quit()

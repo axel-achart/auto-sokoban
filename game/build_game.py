@@ -55,7 +55,6 @@ class GameLogic:
             else:
                 self.matrix[y][x] = 0
 
-            self.matrix[ny][nx] = 3
             self.player_position = (ny, nx)
             
 
