@@ -1,4 +1,5 @@
 from math import e
+from matplotlib.pyplot import grid
 import pygame, copy, time
 from config import *
 from game.direction import DIRECTIONS
@@ -206,11 +207,13 @@ class DisplayGame:
                     if buttons["reset"].collidepoint(event.pos):
                         self.reset_to_initial_state()
                     elif buttons["cancel"].collidepoint(event.pos):
-                        previous_state = self.logic.undo_move()
-                        if previous_state is not None:
-                            self.matrix, self.player_pos = previous_state
-                            self.logic = GameLogic(copy.deepcopy(self.matrix), self.player_pos)
+                        if self.logic.move_history:
+                            self.logic.undo()
+                            self.matrix = self.logic.matrix  # Sync display matrix with logic
+                            pygame.time.delay(100)
+                            self.draw_grid()
                             print("State Undone")
+                            print(self.matrix)
                         else:
                             print("No State to Undo")
 

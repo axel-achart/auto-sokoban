@@ -1,11 +1,11 @@
 from copy import deepcopy
 from game.direction import DIRECTIONS
 import pygame, copy
-
 class GameLogic:
     def __init__(self, matrix, player_position):
         self.matrix = matrix
         self.player_position = player_position
+        self.boxes = [(r, c) for r, row in enumerate(matrix) for c, val in enumerate(row) if val == 2]
         # Stocker les cibles pour pouvoir les remettre si besoin
         self.targets = [(r, c) for r, row in enumerate(matrix) for c, val in enumerate(row) if val == 1]
 
@@ -13,7 +13,8 @@ class GameLogic:
         self.sound_mouvement = pygame.mixer.Sound("assets/sounds/mouvement.mp3")
         self.sound_mouvement.set_volume(1.0)
 
-        self.move_history = []
+        self.move_history = [(self.player_position, tuple(self.boxes))]
+        self.matrix_history = [copy.deepcopy(self.matrix)]
 
     def check_valid_moves(self, direction):
         dy, dx = direction
@@ -35,10 +36,12 @@ class GameLogic:
 
     def move(self, direction):
         if self.check_valid_moves(direction):
+            self.save_matrix()
+            
             dy, dx = direction
             y, x = self.player_position
             ny, nx = y + dy, x + dx
-            self.save_state()
+            
 
             if self.sound_mouvement:
                 self.sound_mouvement.play()
@@ -85,26 +88,15 @@ class GameLogic:
         # Vérifie si toutes les cibles sont occupées par des boîtes
         return all(self.matrix[r][c] == 2 for r, c in self.targets)
     
-    def save_state(self):
-        # On sauvegarde un tuple : (copie matrice, position joueur)
-        self.move_history.append((deepcopy(self.matrix), self.player_position))
-        print(f"State saved. Total moves: {len(self.move_history)}")
-
-
-    def undo_move(self):
-        if self.move_history:
-            previous_matrix = self.move_history.pop()
-            # Retrouver la position du joueur dans previous_matrix :
-            for r, row in enumerate(previous_matrix):
-                for c, val in enumerate(row):
-                    if val == 3:
-                        player_pos = (r, c)
-                        break
-                else:
-                    continue
-                break
-            else:
-                player_pos = None  # cas improbable
-
-            return previous_matrix, player_pos
-        return None
+    def save_matrix(self):
+        self.matrix_history.append(copy.deepcopy(self.matrix))
+        self.move_history.append((self.player_position, tuple(self.boxes)))
+    
+    def undo(self):
+        if self.move_history and len(self.matrix_history) > 1:
+            last_state = self.move_history.pop()
+            self.matrix = self.matrix_history.pop()
+            self.player_position = last_state[0]
+            self.boxes = list(last_state[1])
+            print(self.matrix)
+            print("State Undone")
