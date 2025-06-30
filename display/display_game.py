@@ -40,12 +40,13 @@ class DisplayGame:
             4: pygame.image.load(os.path.join("assets", "img", "goal.png")), # Cible
         }
 
+
         pygame.init()
         self.screen = pygame.display.set_mode((self.width, self.height))
         pygame.display.set_caption("Sokoban Game")
 
         pygame.mixer.init()
-        pygame.mixer.music.load("auto-sokoban/assets/sounds/music.mp3")
+        pygame.mixer.music.load("assets/sounds/music.mp3")
         pygame.mixer.music.play(-1)
         pygame.mixer.music.set_volume(0.4)
 
